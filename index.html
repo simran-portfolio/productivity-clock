@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Productivity Clock</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0f1a30;
+  --surface: #17274a;
+  --fg: #eef1f8;
+  --muted: #9fb0d1;
+  --accent: #f2b84b;
+  --on-accent: #1a1405;
+  --track: rgba(255, 255, 255, 0.12);
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-digits: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  --ease: 1.2s ease;
+}
+body[data-mode="break"] {
+  --bg: #0d3a35;
+  --surface: #14504a;
+  --fg: #ecf8f3;
+  --muted: #9fd0c2;
+  --accent: #8fe3b4;
+  --on-accent: #052019;
+  --track: rgba(255, 255, 255, 0.14);
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  padding-inline: 16px;
+  padding-block: 24px;
+  background-color: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-display);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color var(--ease), color var(--ease);
+}
+.app {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+}
+.brand {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  transition: color var(--ease);
+}
+.modes {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background-color: var(--surface);
+  transition: background-color var(--ease);
+}
+.mode-tab {
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 10px 22px;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  transition: background-color 0.4s ease, color 0.4s ease;
+}
+.mode-tab[aria-pressed="true"] {
+  background-color: var(--accent);
+  color: var(--on-accent);
+}
+.dial {
+  position: relative;
+  width: min(80vw, 300px);
+  aspect-ratio: 1;
+  max-width: 100%;
+}
+.dial svg { width: 100%; height: 100%; display: block; transform: rotate(-90deg); }
+.ring-track { fill: none; stroke: var(--track); stroke-width: 10; transition: stroke var(--ease); }
+.ring-progress {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 10;
+  stroke-linecap: round;
+  transition: stroke var(--ease), stroke-dashoffset 0.5s linear;
+}
+.readout {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.time {
+  font-family: var(--font-digits);
+  font-weight: 700;
+  font-size: clamp(2.6rem, 14vw, 4rem);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.status {
+  margin: 0;
+  font-size: 0.85rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  transition: color var(--ease);
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+.btn {
+  appearance: none;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  font-size: 1rem;
+  padding: 13px 26px;
+  border-radius: 14px;
+  border: 2px solid var(--track);
+  background: transparent;
+  color: var(--fg);
+  transition: transform 0.15s ease, background-color 0.4s ease, border-color 0.4s ease, color 0.4s ease;
+}
+.btn:hover { transform: translateY(-2px); border-color: var(--muted); }
+.btn:active { transform: translateY(0); }
+.btn-primary {
+  min-width: 120px;
+  background-color: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+.btn-primary:hover { border-color: var(--accent); filter: brightness(1.08); }
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 8px 20px;
+  font-size: 0.9rem;
+  color: var(--muted);
+  transition: color var(--ease);
+}
+.link-btn {
+  appearance: none;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  color: var(--fg);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  padding: 4px;
+}
+.hint { margin: 0; font-size: 0.8rem; color: var(--muted); text-align: center; }
+kbd {
+  font-family: var(--font-digits);
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--track);
+}
+button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.alarm .time { animation: pulse 0.6s ease 3; }
+@keyframes pulse { 50% { transform: scale(1.08); } }
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01s !important; animation: none !important; }
+}
+</style>
+</head>
+<body data-mode="focus">
+<main class="app">
+  <h1 class="brand">Productivity Clock</h1>
+
+  <div class="modes" role="group" aria-label="Session type">
+    <button class="mode-tab" id="tab-focus" type="button" aria-pressed="true">Focus 25</button>
+    <button class="mode-tab" id="tab-break" type="button" aria-pressed="false">Break 5</button>
+  </div>
+
+  <div class="dial" id="dial">
+    <svg viewBox="0 0 240 240" aria-hidden="true">
+      <circle class="ring-track" cx="120" cy="120" r="108"></circle>
+      <circle class="ring-progress" id="ring" cx="120" cy="120" r="108"></circle>
+    </svg>
+    <div class="readout">
+      <div class="time" id="time" role="timer" aria-live="off">25:00</div>
+      <p class="status" id="status">Ready to focus</p>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn btn-primary" id="startBtn" type="button">Start</button>
+    <button class="btn" id="resetBtn" type="button">Reset</button>
+    <button class="btn" id="switchBtn" type="button">Switch Mode</button>
+  </div>
+
+  <div class="foot">
+    <span>Focus sessions done: <strong id="count">0</strong></span>
+    <button class="link-btn" id="soundBtn" type="button">Sound: On</button>
+    <button class="link-btn" id="testBtn" type="button">Test sound</button>
+  </div>
+  <p class="hint">Shortcut: press <kbd>Space</kbd> to start or pause</p>
+</main>
+
+<script>
+(function () {
+  var DURATION = { focus: 25 * 60, break: 5 * 60 };
+  var LABEL = { focus: "Ready to focus", break: "Time to rest" };
+  var RUNNING_LABEL = { focus: "Focusing", break: "On break" };
+  var CIRC = 2 * Math.PI * 108;
+
+  var mode = "focus";
+  var remainingMs = DURATION.focus * 1000;
+  var running = false;
+  var endTime = 0;
+  var timerId = null;
+  var sessions = 0;
+  var soundOn = true;
+  var audioCtx = null;
+
+  var $ = function (id) { return document.getElementById(id); };
+  var timeEl = $("time"), statusEl = $("status"), ringEl = $("ring"), dialEl = $("dial");
+  var startBtn = $("startBtn"), resetBtn = $("resetBtn"), switchBtn = $("switchBtn");
+  var tabFocus = $("tab-focus"), tabBreak = $("tab-break");
+  var countEl = $("count"), soundBtn = $("soundBtn"), testBtn = $("testBtn");
+
+  ringEl.style.strokeDasharray = CIRC;
+
+  function pad(n) { return n < 10 ? "0" + n : "" + n; }
+
+  function render() {
+    var secs = Math.ceil(remainingMs / 1000);
+    var text = pad(Math.floor(secs / 60)) + ":" + pad(secs % 60);
+    timeEl.textContent = text;
+    document.title = (running ? text + " · " : "") + "Productivity Clock";
+    var total = DURATION[mode] * 1000;
+    ringEl.style.strokeDashoffset = CIRC * (1 - remainingMs / total);
+    document.body.setAttribute("data-mode", mode);
+    tabFocus.setAttribute("aria-pressed", String(mode === "focus"));
+    tabBreak.setAttribute("aria-pressed", String(mode === "break"));
+    var started = remainingMs < total;
+    startBtn.textContent = running ? "Pause" : (started ? "Resume" : "Start");
+    if (running) statusEl.textContent = RUNNING_LABEL[mode];
+    else if (started) statusEl.textContent = "Paused";
+    else statusEl.textContent = LABEL[mode];
+  }
+
+  function getAudio() {
+    if (!audioCtx) {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) audioCtx = new AC();
+    }
+    if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+    return audioCtx;
+  }
+  function beep(startAt, freq) {
+    var ctx = audioCtx;
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.0001, startAt);
+    gain.gain.exponentialRampToValueAtTime(0.4, startAt + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, startAt + 0.4);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(startAt);
+    osc.stop(startAt + 0.45);
+  }
+  function playAlert() {
+    if (!soundOn) return;
+    var ctx = getAudio();
+    if (!ctx) return;
+    var t = ctx.currentTime + 0.05;
+    beep(t, 880);
+    beep(t + 0.5, 880);
+    beep(t + 1.0, 1175);
+  }
+
+  function tick() {
+    remainingMs = Math.max(0, endTime - Date.now());
+    if (remainingMs <= 0) { finish(); return; }
+    render();
+  }
+  function start() {
+    getAudio();
+    if (running) return;
+    running = true;
+    endTime = Date.now() + remainingMs;
+    timerId = setInterval(tick, 250);
+    render();
+  }
+  function pause() {
+    if (!running) return;
+    running = false;
+    clearInterval(timerId);
+    remainingMs = Math.max(0, endTime - Date.now());
+    render();
+  }
+  function reset() {
+    running = false;
+    clearInterval(timerId);
+    remainingMs = DURATION[mode] * 1000;
+    dialEl.classList.remove("alarm");
+    render();
+  }
+  function setMode(next) {
+    mode = next;
+    reset();
+  }
+  function finish() {
+    running = false;
+    clearInterval(timerId);
+    remainingMs = 0;
+    timeEl.textContent = "00:00";
+    ringEl.style.strokeDashoffset = CIRC;
+    playAlert();
+    dialEl.classList.remove("alarm");
+    void dialEl.offsetWidth;
+    dialEl.classList.add("alarm");
+    var wasFocus = mode === "focus";
+    if (wasFocus) { sessions += 1; countEl.textContent = sessions; }
+    statusEl.textContent = wasFocus ? "Focus done! Take a break" : "Break over! Back to work";
+    document.title = "Time's up · Productivity Clock";
+    startBtn.textContent = "Start";
+    setTimeout(function () {
+      if (!running && remainingMs === 0) {
+        var next = wasFocus ? "break" : "focus";
+        mode = next;
+        remainingMs = DURATION[next] * 1000;
+        dialEl.classList.remove("alarm");
+        render();
+        statusEl.textContent = wasFocus ? "Break ready, press Start" : "Focus ready, press Start";
+      }
+    }, 2500);
+  }
+
+  startBtn.addEventListener("click", function () { running ? pause() : start(); });
+  resetBtn.addEventListener("click", reset);
+  switchBtn.addEventListener("click", function () { setMode(mode === "focus" ? "break" : "focus"); });
+  tabFocus.addEventListener("click", function () { if (mode !== "focus") setMode("focus"); });
+  tabBreak.addEventListener("click", function () { if (mode !== "break") setMode("break"); });
+  soundBtn.addEventListener("click", function () {
+    soundOn = !soundOn;
+    soundBtn.textContent = "Sound: " + (soundOn ? "On" : "Off");
+  });
+  testBtn.addEventListener("click", function () {
+    var was = soundOn; soundOn = true; playAlert(); soundOn = was;
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.code === "Space" && e.target.tagName !== "BUTTON") {
+      e.preventDefault();
+      running ? pause() : start();
+    }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
